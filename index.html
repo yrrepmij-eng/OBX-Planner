@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBX Trip Planner 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dune:#e8d4a0;--ocean:#2c6e8a;--seafoam:#4a9db5;
+  --coral:#d4634a;--kelp:#4a6741;--sunset:#e8854a;--cream:#faf6ec;
+  --dark:#1e2a2f;--mid:#5a6a72;--light:#8a9ba3;
+  --fa:#2c6e8a;--fb:#d4634a;--fc:#4a6741;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);background-image:radial-gradient(ellipse at 15% 0%,rgba(44,110,138,.1) 0%,transparent 55%),radial-gradient(ellipse at 85% 100%,rgba(212,99,74,.08) 0%,transparent 55%);font-family:'DM Sans',sans-serif;color:var(--dark);min-height:100vh;}
+
+#setup-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;}
+.setup-card{background:white;border-radius:24px;padding:3rem 2.5rem;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(44,110,138,.15);border:1px solid var(--dune);text-align:center;}
+.setup-card h1{font-family:'Playfair Display',serif;font-size:2rem;color:var(--ocean);margin-bottom:.25rem;}
+.trip-dates{color:var(--mid);font-size:.85rem;margin-bottom:2rem;}
+.setup-label{font-size:.8rem;font-weight:600;color:var(--mid);text-align:left;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;}
+.fam-buttons{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.5rem;}
+.fam-btn{width:100%;padding:.85rem 1rem;border:2px solid var(--dune);border-radius:12px;background:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;transition:all .2s;color:var(--mid);text-align:left;}
+.fam-btn:hover{border-color:var(--ocean);color:var(--ocean);}
+.fam-btn.sel[data-fam="A"]{background:var(--fa);border-color:var(--fa);color:white;}
+.fam-btn.sel[data-fam="B"]{background:var(--fb);border-color:var(--fb);color:white;}
+.fam-btn.sel[data-fam="C"]{background:var(--fc);border-color:var(--fc);color:white;}
+.enter-btn{width:100%;padding:.9rem;background:var(--ocean);color:white;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s;}
+.enter-btn:hover{background:#245a73;}
+.enter-btn:disabled{background:var(--light);cursor:not-allowed;}
+
+#app{display:none;max-width:960px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+header{text-align:center;padding:1.5rem 0 1rem;}
+header h1{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;color:var(--ocean);}
+.header-meta{font-size:.85rem;color:var(--mid);margin-top:.25rem;}
+.you-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .9rem;border-radius:100px;font-size:.8rem;font-weight:600;color:white;margin-top:.6rem;}
+.you-badge[data-fam="A"]{background:var(--fa);}
+.you-badge[data-fam="B"]{background:var(--fb);}
+.you-badge[data-fam="C"]{background:var(--fc);}
+.sync-wrap{display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.3rem;}
+.sync-dot{width:8px;height:8px;border-radius:50%;}
+.sync-dot.green{background:var(--kelp);animation:pulse 2s infinite;}
+.sync-dot.yellow{background:var(--sunset);animation:pulse .8s infinite;}
+.sync-dot.red{background:var(--coral);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+#sync-lbl{font-size:.75rem;font-weight:500;color:var(--mid);}
+.tabs{display:flex;justify-content:center;gap:.5rem;margin:1.25rem 0 0;flex-wrap:wrap;}
+.tab-btn{padding:.55rem 1.4rem;border:2px solid var(--ocean);border-radius:100px;background:transparent;color:var(--ocean);font-family:'DM Sans',sans-serif;font-size:.875rem;font-weight:500;cursor:pointer;transition:all .2s;}
+.tab-btn.active,.tab-btn:hover{background:var(--ocean);color:white;}
+.tab-panel{display:none;padding-top:1.5rem;}
+.tab-panel.active{display:block;}
+
+.fam-legend{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;padding:.75rem 1rem;background:white;border-radius:12px;border:1px solid var(--dune);align-items:center;}
+.fam-legend-item{display:flex;align-items:center;gap:.4rem;font-size:.82rem;}
+.fam-dot{width:10px;height:10px;border-radius:50%;}
+.info-banner{background:rgba(44,110,138,.06);border:1px solid rgba(44,110,138,.2);border-radius:10px;padding:.65rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--ocean);}
+
+.day-card{background:white;border-radius:16px;margin-bottom:.9rem;border:1px solid rgba(232,212,160,.6);overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.day-header{display:flex;align-items:center;padding:.85rem 1.25rem;cursor:pointer;user-select:none;gap:.75rem;}
+.day-label{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--ocean);flex:1;}
+.day-chevron{font-size:.75rem;color:var(--light);transition:transform .2s;}
+.day-card.open .day-chevron{transform:rotate(180deg);}
+.day-body{display:none;border-top:1px solid var(--dune);}
+.day-card.open .day-body{display:block;}
+
+.meal-row{display:flex;align-items:flex-start;gap:.75rem;padding:.8rem 1.25rem;border-bottom:1px dotted rgba(232,212,160,.7);}
+.mbadge{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:white;border-radius:6px;padding:.2rem .5rem;white-space:nowrap;min-width:70px;text-align:center;flex-shrink:0;margin-top:2px;}
+.mbadge.grill{background:var(--coral);}
+.mbadge.inside{background:var(--kelp);}
+.mbadge.out{background:var(--sunset);}
+.mbadge.snack{background:var(--seafoam);}
+.meal-info{flex:1;min-width:0;}
+.meal-name{font-weight:600;font-size:.92rem;}
+.meal-desc{font-size:.8rem;color:var(--mid);margin-top:.15rem;font-weight:300;}
+.ing-chips{margin-top:.35rem;display:flex;flex-wrap:wrap;gap:.3rem;}
+.ing-chip{font-size:.72rem;background:rgba(44,110,138,.07);color:var(--ocean);border-radius:100px;padding:.12rem .5rem;border:1px solid rgba(44,110,138,.15);}
+.meal-actions{display:flex;gap:.4rem;align-items:flex-start;flex-shrink:0;}
+.icon-btn{background:none;border:1.5px solid var(--dune);border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;color:var(--mid);transition:all .15s;}
+.icon-btn:hover{border-color:var(--ocean);color:var(--ocean);}
+.icon-btn.del:hover{border-color:var(--coral);color:var(--coral);}
+
+.meal-editor{display:none;padding:.8rem 1.25rem 1rem;border-bottom:1px solid var(--dune);background:rgba(245,230,200,.12);}
+.meal-editor.open{display:block;}
+.ed-row{display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center;flex-wrap:wrap;}
+.ed-label{font-size:.75rem;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;min-width:55px;}
+.ed-input{flex:1;padding:.4rem .65rem;border:1.5px solid var(--dune);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--dark);background:white;min-width:100px;}
+.ed-input:focus{outline:none;border-color:var(--ocean);}
+.ed-sel{padding:.4rem .5rem;border:1.5px solid var(--dune);border-radius:8px;font-size:.82rem;background:white;color:var(--dark);font-family:'DM Sans',sans-serif;}
+.ed-save{padding:.4rem 1rem;background:var(--ocean);color:white;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.ed-cancel{padding:.4rem .8rem;background:transparent;color:var(--mid);border:1.5px solid var(--dune);border-radius:8px;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+.ing-section{margin-top:.6rem;border-top:1px dashed var(--dune);padding-top:.6rem;}
+.ing-section-title{font-size:.75rem;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem;}
+.ing-rows{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.4rem;}
+.ing-edit-row{display:flex;gap:.4rem;align-items:center;}
+.ing-name-inp{flex:2;padding:.35rem .55rem;border:1.5px solid var(--dune);border-radius:7px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--dark);background:white;}
+.ing-qty-inp{flex:1;padding:.35rem .55rem;border:1.5px solid var(--dune);border-radius:7px;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--dark);background:white;}
+.ing-name-inp:focus,.ing-qty-inp:focus{outline:none;border-color:var(--ocean);}
+.ing-cat-sel{padding:.35rem .4rem;border:1.5px solid var(--dune);border-radius:7px;font-size:.78rem;background:white;color:var(--dark);font-family:'DM Sans',sans-serif;}
+.ing-rm{background:none;border:1.5px solid var(--dune);border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:.7rem;color:var(--mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ing-rm:hover{border-color:var(--coral);color:var(--coral);}
+.add-ing-row{display:flex;gap:.4rem;flex-wrap:wrap;}
+.add-ing-btn{padding:.35rem .75rem;background:transparent;border:1.5px dashed var(--ocean);color:var(--ocean);border-radius:7px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.add-ing-btn:hover{background:rgba(44,110,138,.06);}
+
+.add-meal-bar{padding:.6rem 1.25rem;display:flex;gap:.5rem;align-items:center;background:rgba(245,230,200,.15);flex-wrap:wrap;}
+.add-meal-inp{flex:1;min-width:120px;padding:.45rem .7rem;border:1.5px dashed var(--dune);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:white;color:var(--dark);}
+.add-meal-inp:focus{outline:none;border-color:var(--ocean);border-style:solid;}
+.add-sel{padding:.45rem .4rem;border:1.5px solid var(--dune);border-radius:8px;font-size:.8rem;background:white;color:var(--dark);font-family:'DM Sans',sans-serif;}
+.add-btn{padding:.45rem .85rem;background:var(--ocean);color:white;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+.shop-toolbar{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.shop-filter-btn{padding:.35rem .85rem;border:1.5px solid var(--dune);border-radius:100px;background:white;font-size:.78rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--mid);transition:all .15s;}
+.shop-filter-btn.active{background:var(--ocean);border-color:var(--ocean);color:white;}
+.shop-progress{font-size:.8rem;color:var(--mid);margin-left:auto;}
+
+.shop-sec{background:white;border-radius:16px;margin-bottom:.9rem;border:1px solid rgba(232,212,160,.6);box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.shop-hdr{display:flex;align-items:center;gap:.75rem;padding:.9rem 1.25rem;cursor:pointer;user-select:none;}
+.shop-icon{font-size:1.2rem;}
+.shop-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--ocean);flex:1;}
+.item-ct{font-size:.75rem;background:var(--dune);border-radius:100px;padding:.15rem .6rem;font-weight:500;}
+.chk-ct{font-size:.75rem;color:var(--kelp);font-weight:600;}
+.shop-chev{font-size:.75rem;color:var(--light);transition:transform .2s;}
+.shop-sec.open .shop-chev{transform:rotate(180deg);}
+.shop-body{display:none;border-top:1px solid var(--dune);}
+.shop-sec.open .shop-body{display:block;}
+
+.shop-item{display:flex;align-items:center;gap:.6rem;padding:.45rem 1.25rem;border-bottom:1px dotted rgba(232,212,160,.5);transition:background .1s;}
+.shop-item:last-of-type{border-bottom:none;}
+.shop-item:hover{background:rgba(245,230,200,.15);}
+.chkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--dune);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:white;transition:all .15s;}
+.shop-item.chkd .chkbox{background:var(--kelp);border-color:var(--kelp);}
+.shop-item.chkd .chkbox::after{content:'\2713';}
+.shop-item.chkd .iname{text-decoration:line-through;color:var(--light);}
+.iname{flex:1;font-size:.88rem;cursor:pointer;}
+.linked-tag{font-size:.68rem;background:rgba(74,155,181,.1);color:var(--seafoam);border-radius:4px;padding:.1rem .35rem;border:1px solid rgba(74,155,181,.25);margin-left:.3rem;white-space:nowrap;}
+.iqty{font-size:.8rem;color:var(--mid);font-weight:300;cursor:pointer;min-width:40px;}
+.iqty-inp{font-size:.8rem;border:1.5px solid var(--ocean);border-radius:6px;padding:.15rem .4rem;font-family:'DM Sans',sans-serif;width:90px;background:white;}
+.iqty-inp:focus{outline:none;}
+.iactions{display:flex;gap:.3rem;align-items:center;flex-shrink:0;}
+.assign-badge{display:inline-flex;align-items:center;padding:.12rem .5rem;border-radius:100px;font-size:.72rem;font-weight:600;color:white;cursor:pointer;white-space:nowrap;}
+.assign-badge.none{background:var(--dune);color:var(--mid);}
+.assign-badge[data-fam="A"]{background:var(--fa);}
+.assign-badge[data-fam="B"]{background:var(--fb);}
+.assign-badge[data-fam="C"]{background:var(--fc);}
+
+.add-item-bar{display:flex;gap:.5rem;padding:.55rem 1.25rem;background:rgba(245,230,200,.12);border-top:1px dotted var(--dune);flex-wrap:wrap;}
+.add-item-inp{flex:2;min-width:100px;padding:.4rem .65rem;border:1.5px dashed var(--dune);border-radius:8px;font-size:.83rem;background:white;font-family:'DM Sans',sans-serif;}
+.add-item-inp:focus{outline:none;border-color:var(--ocean);border-style:solid;}
+.add-item-qty{flex:1;min-width:60px;padding:.4rem .55rem;border:1.5px dashed var(--dune);border-radius:8px;font-size:.83rem;background:white;font-family:'DM Sans',sans-serif;}
+.add-item-qty:focus{outline:none;border-color:var(--ocean);border-style:solid;}
+.add-item-btn{padding:.4rem .75rem;background:var(--ocean);color:white;border:none;border-radius:8px;font-size:.8rem;font-weight:600;cursor:pointer;}
+
+.picker{position:fixed;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.18);border:1px solid var(--dune);padding:.4rem;z-index:9999;display:none;min-width:160px;}
+.picker.on{display:block;}
+.pick-opt{display:flex;align-items:center;gap:.5rem;padding:.45rem .65rem;cursor:pointer;border-radius:8px;font-size:.85rem;font-weight:500;transition:background .1s;}
+.pick-opt:hover{background:var(--cream);}
+.pick-dot{width:11px;height:11px;border-radius:50%;}
+
+.status-bar{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--dark);color:white;padding:.5rem 1.25rem;border-radius:100px;font-size:.8rem;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:10000;}
+.status-bar.on{opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="setup-screen">
+  <div class="setup-card">
+    <div style="font-size:2rem;margin-bottom:.5rem">🌊🐚🦀</div>
+    <h1>OBX Trip Planner</h1>
+    <div class="trip-dates">March 28 – April 5, 2026 &nbsp;·&nbsp; 3 Families</div>
+    <div style="margin-bottom:1.5rem;text-align:left">
+      <div class="setup-label">Which family are you?</div>
+      <div class="fam-buttons">
+        <button class="fam-btn" data-fam="A" onclick="pickFam(this)">🏠 Perry Family</button>
+        <button class="fam-btn" data-fam="B" onclick="pickFam(this)">🏠 Shavel Family</button>
+        <button class="fam-btn" data-fam="C" onclick="pickFam(this)">🏠 Geller Family <span style="font-size:.75rem;font-weight:400;opacity:.75">(Sat–Tue)</span></button>
+      </div>
+    </div>
+    <div style="font-size:.78rem;color:var(--mid);margin-bottom:1.25rem;background:var(--cream);border-radius:8px;padding:.6rem .75rem;text-align:left">
+      ☁️ Syncs across all devices via Google Sheets — works on any phone or browser, no app required.
+    </div>
+    <button class="enter-btn" id="enter-btn" onclick="enterApp()" disabled>Enter Planner →</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div style="font-size:1.8rem">🌊 🐚 🦀</div>
+    <h1>OBX Trip Planner</h1>
+    <div class="header-meta">March 28 – April 5 &nbsp;·&nbsp; 6 Adults · 7 Kids</div>
+    <div><span class="you-badge" id="you-badge">👤</span></div>
+    <div class="sync-wrap">
+      <span class="sync-dot yellow" id="sync-dot"></span>
+      <span id="sync-lbl">Connecting...</span>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('meals',this)">🍽 Meal Plan</button>
+      <button class="tab-btn" onclick="showTab('shopping',this)">🛒 Shopping List</button>
+    </div>
+  </header>
+
+  <div class="tab-panel active" id="tab-meals">
+    <div class="fam-legend">
+      <span style="font-size:.8rem;font-weight:600;color:var(--mid)">Families:</span>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fa)"></div><span>Perry Family</span></div>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fb)"></div><span>Shavel Family</span></div>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fc)"></div><span>Geller Family</span></div>
+      <span style="font-size:.75rem;color:var(--mid);margin-left:auto">✏️ to edit meal &amp; ingredients</span>
+    </div>
+    <div class="info-banner">✨ Editing a meal's ingredients automatically updates the Shopping List.</div>
+    <div id="days-wrap"></div>
+  </div>
+
+  <div class="tab-panel" id="tab-shopping">
+    <div class="fam-legend">
+      <span style="font-size:.8rem;font-weight:600;color:var(--mid)">Assign to:</span>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fa)"></div><span>Perry</span></div>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fb)"></div><span>Shavel</span></div>
+      <div class="fam-legend-item"><div class="fam-dot" style="background:var(--fc)"></div><span>Geller</span></div>
+      <span style="font-size:.75rem;color:var(--mid);margin-left:auto">Click qty to edit · badge to assign</span>
+    </div>
+    <div class="shop-toolbar">
+      <button class="shop-filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="shop-filter-btn" onclick="setFilter('A',this)">Perry</button>
+      <button class="shop-filter-btn" onclick="setFilter('B',this)">Shavel</button>
+      <button class="shop-filter-btn" onclick="setFilter('C',this)">Geller</button>
+      <button class="shop-filter-btn" onclick="setFilter('unassigned',this)">Unassigned</button>
+      <span class="shop-progress" id="shop-progress"></span>
+    </div>
+    <div id="shop-wrap"></div>
+  </div>
+</div>
+
+<div class="picker" id="picker">
+  <div class="pick-opt" onclick="doAssign('A')"><div class="pick-dot" style="background:var(--fa)"></div>Perry Family</div>
+  <div class="pick-opt" onclick="doAssign('B')"><div class="pick-dot" style="background:var(--fb)"></div>Shavel Family</div>
+  <div class="pick-opt" onclick="doAssign('C')"><div class="pick-dot" style="background:var(--fc)"></div>Geller Family</div>
+  <div class="pick-opt" onclick="doAssign(null)"><div class="pick-dot" style="background:var(--dune)"></div>Unassign</div>
+</div>
+<div class="status-bar" id="status-bar"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS CONFIG
+// All data lives in one sheet as JSON in cell A1.
+// Works on every device, no special APIs needed.
+// ═══════════════════════════════════════════════
+// ── Google Apps Script endpoint (handles CORS, works everywhere) ──
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7QW-bRWqQN7Vb1GpKDAk6zxn4bBRSSmPNKt6Y-2boZh7s4GRmwo4V3qhIsXDeChgy/exec';
+
+async function sheetsRead(){
+  // Use fetch with cors mode — Apps Script sets Access-Control-Allow-Origin: *
+  const res = await fetch(SCRIPT_URL + '?_=' + Date.now(), {
+    method: 'GET',
+    redirect: 'follow'
+  });
+  if(!res.ok) throw new Error('Read failed: '+res.status);
+  const txt = await res.text();
+  if(!txt || txt.trim()==='' || txt.trim()==='{}') return null;
+  try{ return JSON.parse(txt); }
+  catch(e){ throw new Error('Bad JSON: '+txt.slice(0,80)); }
+}
+
+async function sheetsWrite(data){
+  await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(data)
+  });
+  return true;
+}
+
+// ═══════════════════════════════════════════════
+// CATEGORIES
+// ═══════════════════════════════════════════════
+const CATS = [
+  {id:'seafood',icon:'🦐',title:'Seafood & Proteins'},
+  {id:'produce',icon:'🥑',title:'Produce'},
+  {id:'dairy',  icon:'🧀',title:'Dairy & Eggs'},
+  {id:'bread',  icon:'🍞',title:'Bread & Pasta'},
+  {id:'pantry', icon:'🥫',title:'Pantry & Dry Goods'},
+  {id:'spices', icon:'🧂',title:'Spices & Condiments'},
+  {id:'bev',    icon:'🥤',title:'Beverages & Supplies'},
+];
+
+// ═══════════════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════════════
+const DEF_DAYS=[
+  {id:'d1',label:'Sat 3/28 — Arrival Day',meals:[
+    {id:'m1',type:'inside',tl:'Breakfast',name:'Pancake & Bacon Bar',desc:'Easy crowd-pleaser — set up buffet style',ings:[{id:'g1',name:'Pancake mix',qty:'2 large boxes',cat:'pantry'},{id:'g2',name:'Bacon',qty:'2 lbs',cat:'seafood'},{id:'g3',name:'Maple syrup',qty:'2 bottles',cat:'pantry'},{id:'g4',name:'Butter (unsalted)',qty:'3 lbs',cat:'dairy'},{id:'g5',name:'Eggs',qty:'4 dozen',cat:'dairy'},{id:'g6',name:'Mixed berries',qty:'2 large containers',cat:'produce'}]},
+    {id:'m2',type:'snack',tl:'Lunch',name:'Deli Sandwich Bar',desc:'Casual while unpacking and getting settled',ings:[{id:'g7',name:'Deli meats (turkey, ham, salami)',qty:'assorted',cat:'seafood'},{id:'g8',name:'Sandwich bread',qty:'2 loaves',cat:'bread'},{id:'g9',name:'Chips (tortilla + regular)',qty:'4–5 bags',cat:'pantry'},{id:'g10',name:'Mayonnaise',qty:'large jar',cat:'spices'}]},
+    {id:'m3',type:'inside',tl:'Dinner',name:'Shrimp Rice Bowls',desc:'Garlic butter shrimp over jasmine rice with roasted corn, avocado, lime crema, pico de gallo',ings:[{id:'g11',name:'Large shrimp, peeled & deveined',qty:'3 lbs',cat:'seafood'},{id:'g12',name:'Jasmine rice',qty:'5 lb bag',cat:'pantry'},{id:'g13',name:'Avocados',qty:'8–10',cat:'produce'},{id:'g14',name:'Limes',qty:'8–10',cat:'produce'},{id:'g15',name:'Roasted corn (canned)',qty:'3 cans',cat:'pantry'},{id:'g16',name:'Sour cream / crema',qty:'2 containers',cat:'dairy'},{id:'g17',name:'Cilantro',qty:'2 bunches',cat:'produce'},{id:'g18',name:'Tomatoes (on vine)',qty:'6–8',cat:'produce'},{id:'g19',name:'Red onion',qty:'3',cat:'produce'},{id:'g20',name:'Garlic',qty:'3 heads',cat:'produce'}]},
+  ]},
+  {id:'d2',label:'Sun 3/29',meals:[
+    {id:'m4',type:'inside',tl:'Breakfast',name:'Eggs & Toast Station',desc:'Scrambled/fried/over-easy + fruit bowl and OJ',ings:[{id:'g21',name:'Eggs',qty:'2 dozen',cat:'dairy'},{id:'g22',name:'Orange juice',qty:'2 half-gallons',cat:'bev'},{id:'g23',name:'Sandwich bread',qty:'1 loaf',cat:'bread'}]},
+    {id:'m5',type:'grill',tl:'Lunch',name:'Southwest Chicken Sandwiches',desc:'Grilled chicken, pepper jack, chipotle mayo, avocado, roasted peppers on brioche',ings:[{id:'g24',name:'Chicken breasts (boneless)',qty:'6 lbs',cat:'seafood'},{id:'g25',name:'Brioche burger buns',qty:'16',cat:'bread'},{id:'g26',name:'Pepper jack slices',qty:'12 oz',cat:'dairy'},{id:'g27',name:'Chipotle peppers in adobo',qty:'2 cans',cat:'pantry'},{id:'g28',name:'Red bell peppers',qty:'4',cat:'produce'},{id:'g29',name:'Avocados',qty:'4',cat:'produce'}]},
+    {id:'m6',type:'inside',tl:'Dinner',name:'Marry Me Pasta',desc:'Creamy sun-dried tomato sauce, garlic, parmesan — optional shrimp add-in',ings:[{id:'g30',name:'Penne or rigatoni',qty:'2 lbs',cat:'bread'},{id:'g31',name:'Sun-dried tomatoes',qty:'10 oz jar',cat:'pantry'},{id:'g32',name:'Heavy cream',qty:'1 pint',cat:'dairy'},{id:'g33',name:'Parmesan (grated)',qty:'large container',cat:'dairy'},{id:'g34',name:'Chicken broth',qty:'2 cartons (32 oz)',cat:'pantry'},{id:'g35',name:'Fresh basil',qty:'1 bunch',cat:'produce'},{id:'g36',name:'Red pepper flakes',qty:'',cat:'spices'},{id:'g37',name:'Sourdough or Italian loaf',qty:'2 loaves',cat:'bread'},{id:'g38',name:'Large shrimp (optional add-in)',qty:'1 lb',cat:'seafood'}]},
+  ]},
+  {id:'d3',label:'Mon 3/30',meals:[
+    {id:'m7',type:'inside',tl:'Breakfast',name:'Muffins + Yogurt Parfaits',desc:'Store-bought muffins, Greek yogurt, granola, mixed berries',ings:[{id:'g39',name:'Greek yogurt',qty:'large + individual cups',cat:'dairy'},{id:'g40',name:'Granola',qty:'2 bags',cat:'pantry'},{id:'g41',name:'Muffins (store-bought)',qty:'2 dozen',cat:'bread'}]},
+    {id:'m8',type:'snack',tl:'Lunch',name:'Leftover Pasta + Sandwich Bar',desc:'Use Sunday pasta leftovers + deli meats',ings:[]},
+    {id:'m9',type:'grill',tl:'Dinner',name:'Hamburgers & Hot Dogs',desc:'Smash burgers, hot dogs for kids, classic toppings bar, corn on the cob on grill',ings:[{id:'g42',name:'Ground beef (80/20)',qty:'5 lbs',cat:'seafood'},{id:'g43',name:'Hot dogs',qty:'2 packs',cat:'seafood'},{id:'g44',name:'Brioche burger buns',qty:'16',cat:'bread'},{id:'g45',name:'Hot dog buns',qty:'1 pack',cat:'bread'},{id:'g46',name:'Corn on the cob',qty:'8–10 ears',cat:'produce'},{id:'g47',name:'Ketchup',qty:'2 bottles',cat:'spices'},{id:'g48',name:'Yellow mustard + dijon',qty:'',cat:'spices'}]},
+  ]},
+  {id:'d4',label:'Tue 3/31',meals:[
+    {id:'m10',type:'inside',tl:'Breakfast',name:'Waffles or French Toast',desc:'Maple syrup, powdered sugar, berries',ings:[{id:'g49',name:'Eggs',qty:'1 dozen',cat:'dairy'},{id:'g50',name:'Milk',qty:'1 gallon',cat:'dairy'},{id:'g51',name:'Thick-cut bread',qty:'1 loaf',cat:'bread'},{id:'g52',name:'Maple syrup',qty:'1 bottle',cat:'pantry'}]},
+    {id:'m11',type:'grill',tl:'Lunch',name:'Southwest Chicken Sandwiches',desc:'Second batch — leftover chicken great for salads too',ings:[{id:'g53',name:'Chicken breasts (boneless)',qty:'3 lbs',cat:'seafood'},{id:'g54',name:'Brioche burger buns',qty:'10',cat:'bread'},{id:'g55',name:'Pepper jack slices',qty:'6 oz',cat:'dairy'}]},
+    {id:'m12',type:'inside',tl:'Dinner',name:'Scallop Scampi',desc:'Seared scallops, garlic butter, white wine, lemon over linguine — crusty bread, side salad',ings:[{id:'g56',name:'Sea scallops',qty:'~3 lbs',cat:'seafood'},{id:'g57',name:'Linguine',qty:'2 lbs',cat:'bread'},{id:'g58',name:'Butter (unsalted)',qty:'2 lbs',cat:'dairy'},{id:'g59',name:'Garlic',qty:'2 heads',cat:'produce'},{id:'g60',name:'Lemons',qty:'6',cat:'produce'},{id:'g61',name:'White wine (dry)',qty:'1 bottle',cat:'spices'},{id:'g62',name:'Sourdough or Italian loaf',qty:'1 loaf',cat:'bread'},{id:'g63',name:'Romaine lettuce',qty:'2 heads',cat:'produce'},{id:'g64',name:'Capers',qty:'small jar',cat:'spices'}]},
+  ]},
+  {id:'d5',label:'Wed 4/1',meals:[
+    {id:'m13',type:'inside',tl:'Breakfast',name:'Bagels + Cream Cheese Spread',desc:'Lox, capers, tomato, red onion, everything bagels',ings:[{id:'g65',name:'Bagels (everything + assorted)',qty:'3 dozen',cat:'bread'},{id:'g66',name:'Cream cheese',qty:'3 blocks (8 oz)',cat:'dairy'},{id:'g67',name:'Lox / smoked salmon',qty:'8 oz',cat:'seafood'},{id:'g68',name:'Capers',qty:'1 small jar',cat:'spices'},{id:'g69',name:'Red onion',qty:'2',cat:'produce'}]},
+    {id:'m14',type:'snack',tl:'Lunch',name:'Chips, Dips & Leftovers',desc:'Guacamole, salsa, queso — use up taco/rice bowl fixings',ings:[{id:'g70',name:'Tortilla chips',qty:'3 bags',cat:'pantry'},{id:'g71',name:'Salsa (mild + medium)',qty:'3–4 jars',cat:'spices'},{id:'g72',name:'Avocados',qty:'4',cat:'produce'}]},
+    {id:'m15',type:'out',tl:'Dinner Out',name:'🍴 Night Out',desc:'One night off cooking — OBX has excellent seafood restaurants',ings:[]},
+  ]},
+  {id:'d6',label:'Thu 4/2',meals:[
+    {id:'m16',type:'inside',tl:'Breakfast',name:'Cereal Bar + Pastries',desc:'Easy self-serve morning',ings:[{id:'g73',name:'Assorted cereals',qty:'3 boxes',cat:'pantry'},{id:'g74',name:'Milk',qty:'',cat:'dairy'},{id:'g75',name:'Pastries / danishes',qty:'assorted',cat:'bread'}]},
+    {id:'m17',type:'inside',tl:'Lunch',name:'Grilled Cheese & Tomato Soup',desc:"Kids' favorite — simple and warm",ings:[{id:'g76',name:'Sandwich bread',qty:'1 loaf',cat:'bread'},{id:'g77',name:'American or cheddar slices',qty:'1 lb',cat:'dairy'},{id:'g78',name:'Tomato soup (canned)',qty:'6 cans',cat:'pantry'}]},
+    {id:'m18',type:'grill',tl:'Dinner',name:'Grilled Fish Tacos',desc:'Mahi-mahi or tilapia, cabbage slaw, chipotle crema, pickled jalapeños, flour tortillas',ings:[{id:'g79',name:'Mahi-mahi or tilapia fillets',qty:'3–4 lbs',cat:'seafood'},{id:'g80',name:'Flour tortillas',qty:'30-count pack',cat:'bread'},{id:'g81',name:'Cabbage (green, for slaw)',qty:'1 small head',cat:'produce'},{id:'g82',name:'Jalapeños',qty:'4–6',cat:'produce'},{id:'g83',name:'Limes',qty:'4',cat:'produce'},{id:'g84',name:'Cilantro',qty:'1 bunch',cat:'produce'}]},
+  ]},
+  {id:'d7',label:'Fri 4/3',meals:[
+    {id:'m19',type:'inside',tl:'Breakfast',name:'Egg Sandwiches',desc:'Fried egg, bacon or sausage, cheese on English muffins',ings:[{id:'g85',name:'Eggs',qty:'1 dozen',cat:'dairy'},{id:'g86',name:'English muffins',qty:'2 packs',cat:'bread'},{id:'g87',name:'Bacon',qty:'1 lb',cat:'seafood'}]},
+    {id:'m20',type:'snack',tl:'Lunch',name:'Leftover Fish Taco Bar',desc:'Use up Thursday fixings',ings:[]},
+    {id:'m21',type:'inside',tl:'Dinner',name:'Sheet Pan Chicken Thighs & Veggies',desc:'Rosemary lemon chicken thighs, roasted potatoes, green beans',ings:[{id:'g88',name:'Chicken thighs (bone-in)',qty:'5–6 lbs',cat:'seafood'},{id:'g89',name:'Potatoes (Yukon gold or russet)',qty:'5 lbs',cat:'produce'},{id:'g90',name:'Green beans',qty:'2 lbs',cat:'produce'},{id:'g91',name:'Lemons',qty:'3',cat:'produce'},{id:'g92',name:'Rosemary (fresh or dried)',qty:'',cat:'spices'},{id:'g93',name:'Olive oil',qty:'large bottle',cat:'pantry'}]},
+  ]},
+  {id:'d8',label:'Sat 4/4 — Last Night',meals:[
+    {id:'m22',type:'inside',tl:'Breakfast',name:'Big Brunch Spread',desc:'Use up fridge staples — eggs, fruit, toast',ings:[]},
+    {id:'m23',type:'snack',tl:'Lunch',name:'Leftovers Clear-Out',desc:'Last push to use up perishables',ings:[]},
+    {id:'m24',type:'grill',tl:'Dinner',name:'Last Night Grill: Steaks + Hot Dogs',desc:'NY strips for adults, hot dogs for kids — grilled asparagus, baked potatoes',ings:[{id:'g94',name:'NY strip or ribeye steaks',qty:'8–10',cat:'seafood'},{id:'g95',name:'Hot dogs',qty:'1 pack',cat:'seafood'},{id:'g96',name:'Hot dog buns',qty:'1 pack',cat:'bread'},{id:'g97',name:'Asparagus',qty:'2 bunches',cat:'produce'},{id:'g98',name:'Baking potatoes',qty:'13',cat:'produce'}]},
+  ]},
+];
+
+const DEF_MANUAL=[
+  {id:'mi1',cat:'dairy',name:'Milk',qty:'1 gallon',assigned:null,checked:false},
+  {id:'mi2',cat:'produce',name:'Bananas',qty:'1 bunch',assigned:null,checked:false},
+  {id:'mi3',cat:'produce',name:'Romaine lettuce',qty:'2 heads',assigned:null,checked:false},
+  {id:'mi4',cat:'produce',name:'Green bell peppers',qty:'4',assigned:null,checked:false},
+  {id:'mi5',cat:'spices',name:'Kosher salt + black pepper',qty:'',assigned:null,checked:false},
+  {id:'mi6',cat:'spices',name:'Garlic powder + onion powder',qty:'',assigned:null,checked:false},
+  {id:'mi7',cat:'spices',name:'Cumin + smoked paprika + chili powder',qty:'',assigned:null,checked:false},
+  {id:'mi8',cat:'spices',name:'Ranch + caesar dressing',qty:'1 bottle each',assigned:null,checked:false},
+  {id:'mi9',cat:'spices',name:'Hot sauce',qty:'1–2 bottles',assigned:null,checked:false},
+  {id:'mi10',cat:'spices',name:'Worcestershire sauce',qty:'1 bottle',assigned:null,checked:false},
+  {id:'mi11',cat:'pantry',name:'Black beans',qty:'3 cans',assigned:null,checked:false},
+  {id:'mi12',cat:'pantry',name:'Olive oil (extra virgin)',qty:'large bottle',assigned:null,checked:false},
+  {id:'mi13',cat:'pantry',name:'Granola bars / snack bars',qty:'2–3 boxes',assigned:null,checked:false},
+  {id:'mi14',cat:'bev',name:'Coffee (ground or pods)',qty:'for 7 days',assigned:null,checked:false},
+  {id:'mi15',cat:'bev',name:'Creamer',qty:'2 bottles',assigned:null,checked:false},
+  {id:'mi16',cat:'bev',name:'Sparkling water',qty:'3–4 cases',assigned:null,checked:false},
+  {id:'mi17',cat:'bev',name:'Juice boxes / Capri Sun (kids)',qty:'2 boxes',assigned:null,checked:false},
+  {id:'mi18',cat:'bev',name:'Adult beverages',qty:'per family',assigned:null,checked:false},
+  {id:'mi19',cat:'bev',name:'Paper towels',qty:'2 large rolls',assigned:null,checked:false},
+  {id:'mi20',cat:'bev',name:'Heavy duty foil',qty:'1 roll',assigned:null,checked:false},
+  {id:'mi21',cat:'bev',name:'Gallon zip-lock bags',qty:'1 box',assigned:null,checked:false},
+  {id:'mi22',cat:'bev',name:'Trash bags (large)',qty:'1 box',assigned:null,checked:false},
+  {id:'mi23',cat:'bev',name:'Dish soap / sponges',qty:'',assigned:null,checked:false},
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let myFam='', days=[], manualItems=[], shopState={};
+let idCtr=4000, assignTarget=null, shopFilter='all';
+let saving=false, saveQ=null, lastSave=0;
+
+function uid(){ return 'u'+(++idCtr)+'_'+Date.now(); }
+
+// localStorage cache key
+const LC = 'obx2026v3';
+
+function saveLocal(){
+  try{ localStorage.setItem(LC,JSON.stringify({days,manualItems,shopState})); }catch(e){}
+}
+function loadLocal(){
+  try{ const r=localStorage.getItem(LC); return r?JSON.parse(r):null; }catch(e){ return null; }
+}
+function applyData(d){
+  if(!d) return false;
+  if(d.days&&Array.isArray(d.days)) days=d.days;
+  if(d.manualItems&&Array.isArray(d.manualItems)) manualItems=d.manualItems;
+  if(d.shopState&&typeof d.shopState==='object') shopState=d.shopState;
+  return true;
+}
+
+// ═══════════════════════════════════════════════
+// SYNC STATUS
+// ═══════════════════════════════════════════════
+function setSyncStatus(s,msg){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-lbl');
+  dot.className='sync-dot '+s;
+  lbl.textContent=msg;
+}
+
+// ═══════════════════════════════════════════════
+// SETUP
+// ═══════════════════════════════════════════════
+let selFam=null;
+function pickFam(btn){
+  document.querySelectorAll('.fam-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel'); selFam=btn.dataset.fam;
+  document.getElementById('enter-btn').disabled=false;
+}
+
+async function enterApp(){
+  if(!selFam) return;
+  myFam=selFam;
+  const names={A:'Perry Family',B:'Shavel Family',C:'Geller Family'};
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const badge=document.getElementById('you-badge');
+  badge.dataset.fam=myFam;
+  badge.textContent='👤 '+names[myFam];
+  setSyncStatus('yellow','Connecting...');
+
+  // 1. Load local cache instantly so UI appears right away
+  const local=loadLocal();
+  if(local && applyData(local)){
+    renderDays(); renderShop();
+  } else {
+    days=JSON.parse(JSON.stringify(DEF_DAYS));
+    manualItems=JSON.parse(JSON.stringify(DEF_MANUAL));
+    shopState={};
+    renderDays(); renderShop();
+  }
+
+  // 2. Load from Google Sheets
+  try{
+    const remote=await sheetsRead();
+    if(remote){
+      applyData(remote);
+      saveLocal();
+      renderDays(); renderShop();
+      setSyncStatus('green','Synced via Google Sheets ✓');
+    } else {
+      // Sheet is empty — first run, write defaults
+      await sheetsWrite({days,manualItems,shopState});
+      saveLocal();
+      setSyncStatus('green','Synced via Google Sheets ✓');
+    }
+  } catch(e){
+    console.warn('Sheets load failed:',e.message);
+    setSyncStatus('red','Offline — using local data');
+    showStatus('⚠️ Could not connect to Google Sheets — working offline');
+  }
+
+  // 3. Poll for changes every 15s
+  setInterval(async()=>{
+    if(saving) return;
+    try{
+      const remote=await sheetsRead();
+      if(!remote) return;
+      const before=JSON.stringify({days,manualItems,shopState});
+      applyData(remote);
+      const after=JSON.stringify({days,manualItems,shopState});
+      if(before!==after){
+        saveLocal(); renderDays(); renderShop();
+        showStatus('Updated from another family ✓');
+      }
+      setSyncStatus('green','Synced via Google Sheets ✓');
+    } catch(e){
+      setSyncStatus('red','Sync error — retrying...');
+    }
+  },15000);
+}
+
+// ═══════════════════════════════════════════════
+// SAVE
+// ═══════════════════════════════════════════════
+function scheduleSave(){
+  saveLocal(); // instant local save
+  clearTimeout(saveQ);
+  saveQ=setTimeout(async()=>{
+    saving=true;
+    setSyncStatus('yellow','Saving...');
+    try{
+      await sheetsWrite({days,manualItems,shopState});
+      lastSave=Date.now();
+      setSyncStatus('green','Synced via Google Sheets ✓');
+      showStatus('Saved & synced \u2713');
+    } catch(e){
+      setSyncStatus('red','Save failed — retrying...');
+      showStatus('\u26a0\ufe0f Save failed: '+e.message);
+      // retry once after 3s
+      setTimeout(async()=>{
+        try{
+          await sheetsWrite({days,manualItems,shopState});
+          setSyncStatus('green','Synced via Google Sheets \u2713');
+        } catch(e2){}
+      },3000);
+    } finally{ saving=false; }
+  },800);
+}
+
+function showStatus(msg){
+  const b=document.getElementById('status-bar');
+  b.textContent=msg; b.classList.add('on');
+  setTimeout(()=>b.classList.remove('on'),2500);
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// RENDER DAYS
+// ═══════════════════════════════════════════════
+function renderDays(){
+  const open=new Set(); document.querySelectorAll('.day-card.open').forEach(c=>open.add(c.dataset.id));
+  const openEd=new Set(); document.querySelectorAll('.meal-editor.open').forEach(e=>openEd.add(e.dataset.mid));
+  const w=document.getElementById('days-wrap'); w.innerHTML='';
+  days.forEach(day=>{
+    const card=document.createElement('div');
+    card.className='day-card'+(open.has(day.id)?' open':'');
+    card.dataset.id=day.id;
+    card.innerHTML=`
+      <div class="day-header" onclick="toggleDay('${day.id}')">
+        <div class="day-label">${day.label}</div>
+        <span class="day-chevron">&#9660;</span>
+      </div>
+      <div class="day-body">
+        ${(day.meals||[]).map(m=>mealHtml(day.id,m,openEd.has(m.id))).join('')}
+        <div class="add-meal-bar">
+          <select class="add-sel" id="ast-${day.id}">
+            <option value="inside">🍳 Inside</option><option value="grill">🔥 Grill</option>
+            <option value="snack">🥗 Light</option><option value="out">🍴 Out</option>
+          </select>
+          <select class="add-sel" id="atl-${day.id}">
+            <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option>
+          </select>
+          <input class="add-meal-inp" id="ami-${day.id}" placeholder="Add a meal…" onkeydown="if(event.key==='Enter')addMeal('${day.id}')">
+          <button class="add-btn" onclick="addMeal('${day.id}')">+ Add</button>
+        </div>
+      </div>`;
+    w.appendChild(card);
+  });
+}
+
+function mealHtml(dayId,m,edOpen){
+  const ings=m.ings||[];
+  const chips=ings.length?`<div class="ing-chips">${ings.map(i=>`<span class="ing-chip">${esc(i.name)}</span>`).join('')}</div>`:'';
+  const ingRows=ings.map((ing,idx)=>`
+    <div class="ing-edit-row">
+      <input class="ing-name-inp" value="${esc(ing.name)}" placeholder="Ingredient" onchange="updIng('${dayId}','${m.id}',${idx},'name',this.value)">
+      <input class="ing-qty-inp" value="${esc(ing.qty)}" placeholder="Qty" onchange="updIng('${dayId}','${m.id}',${idx},'qty',this.value)">
+      <select class="ing-cat-sel" onchange="updIng('${dayId}','${m.id}',${idx},'cat',this.value)">
+        ${CATS.map(c=>`<option value="${c.id}"${ing.cat===c.id?' selected':''}>${c.icon} ${c.title.split(' ')[0]}</option>`).join('')}
+      </select>
+      <button class="ing-rm" onclick="rmIng('${dayId}','${m.id}',${idx})">&#x2715;</button>
+    </div>`).join('');
+  return `
+    <div class="meal-row">
+      <div class="mbadge ${m.type}">${esc(m.tl)}</div>
+      <div class="meal-info">
+        <div class="meal-name">${esc(m.name)}</div>
+        ${m.desc?`<div class="meal-desc">${esc(m.desc)}</div>`:''}
+        ${chips}
+      </div>
+      <div class="meal-actions">
+        <button class="icon-btn" onclick="toggleEd('${m.id}')">&#9998;</button>
+        <button class="icon-btn del" onclick="rmMeal('${dayId}','${m.id}')">&#x2715;</button>
+      </div>
+    </div>
+    <div class="meal-editor${edOpen?' open':''}" id="me-${m.id}" data-mid="${m.id}">
+      <div class="ed-row">
+        <span class="ed-label">Type</span>
+        <select class="ed-sel" onchange="updMeal('${dayId}','${m.id}','type',this.value)">
+          ${['inside','grill','snack','out'].map(t=>`<option value="${t}"${m.type===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <select class="ed-sel" onchange="updMeal('${dayId}','${m.id}','tl',this.value)">
+          ${['Breakfast','Lunch','Dinner','Snacks','Dinner Out'].map(t=>`<option${m.tl===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ed-row">
+        <span class="ed-label">Name</span>
+        <input class="ed-input" value="${esc(m.name)}" onchange="updMeal('${dayId}','${m.id}','name',this.value)">
+      </div>
+      <div class="ed-row">
+        <span class="ed-label">Notes</span>
+        <input class="ed-input" value="${esc(m.desc||'')}" placeholder="Notes…" onchange="updMeal('${dayId}','${m.id}','desc',this.value)">
+      </div>
+      <div class="ing-section">
+        <div class="ing-section-title">Ingredients — auto-syncs to Shopping List</div>
+        <div class="ing-rows">${ingRows}</div>
+        <div class="add-ing-row">
+          <input class="ing-name-inp" id="nin-${m.id}" placeholder="New ingredient…">
+          <input class="ing-qty-inp" id="niq-${m.id}" placeholder="Qty">
+          <select class="ing-cat-sel" id="nic-${m.id}">
+            ${CATS.map(c=>`<option value="${c.id}">${c.icon} ${c.title.split(' ')[0]}</option>`).join('')}
+          </select>
+          <button class="add-ing-btn" onclick="addIng('${dayId}','${m.id}')">+ Add</button>
+        </div>
+      </div>
+      <div class="ed-row" style="margin-top:.6rem">
+        <button class="ed-cancel" onclick="toggleEd('${m.id}')">Close</button>
+      </div>
+    </div>`;
+}
+
+function toggleDay(id){ document.querySelector(`.day-card[data-id="${id}"]`)?.classList.toggle('open'); }
+function toggleEd(mid){ const e=document.getElementById('me-'+mid); if(e){e.classList.toggle('open');e.dataset.mid=mid;} }
+
+function updMeal(dayId,mId,field,val){
+  const m=days.find(d=>d.id===dayId)?.meals?.find(m=>m.id===mId);
+  if(!m) return; m[field]=val; scheduleSave();
+}
+function updIng(dayId,mId,idx,field,val){
+  const m=days.find(d=>d.id===dayId)?.meals?.find(m=>m.id===mId);
+  if(!m||!m.ings[idx]) return; m.ings[idx][field]=val; scheduleSave(); renderShop();
+}
+function addIng(dayId,mId){
+  const n=document.getElementById('nin-'+mId)?.value.trim(); if(!n) return;
+  const q=document.getElementById('niq-'+mId)?.value.trim()||'';
+  const c=document.getElementById('nic-'+mId)?.value||'pantry';
+  const m=days.find(d=>d.id===dayId)?.meals?.find(m=>m.id===mId); if(!m) return;
+  if(!m.ings) m.ings=[];
+  m.ings.push({id:uid(),name:n,qty:q,cat:c});
+  scheduleSave(); renderDays(); renderShop();
+  document.querySelector(`.day-card[data-id="${dayId}"]`)?.classList.add('open');
+  setTimeout(()=>{ document.getElementById('me-'+mId)?.classList.add('open'); document.getElementById('me-'+mId).dataset.mid=mId; },10);
+}
+function rmIng(dayId,mId,idx){
+  const m=days.find(d=>d.id===dayId)?.meals?.find(m=>m.id===mId); if(!m) return;
+  m.ings.splice(idx,1); scheduleSave(); renderDays(); renderShop();
+  document.querySelector(`.day-card[data-id="${dayId}"]`)?.classList.add('open');
+  setTimeout(()=>{ document.getElementById('me-'+mId)?.classList.add('open'); document.getElementById('me-'+mId).dataset.mid=mId; },10);
+}
+function addMeal(dayId){
+  const inp=document.getElementById('ami-'+dayId);
+  const name=inp?.value.trim(); if(!name) return;
+  const type=document.getElementById('ast-'+dayId)?.value||'inside';
+  const tl=document.getElementById('atl-'+dayId)?.value||'Meal';
+  const day=days.find(d=>d.id===dayId); if(!day) return;
+  day.meals.push({id:uid(),type,tl,name,desc:'',ings:[]});
+  inp.value=''; scheduleSave(); renderDays();
+  document.querySelector(`.day-card[data-id="${dayId}"]`)?.classList.add('open');
+}
+function rmMeal(dayId,mId){
+  const day=days.find(d=>d.id===dayId); if(!day) return;
+  day.meals=day.meals.filter(m=>m.id!==mId);
+  scheduleSave(); renderDays(); renderShop();
+  document.querySelector(`.day-card[data-id="${dayId}"]`)?.classList.add('open');
+}
+
+// ═══════════════════════════════════════════════
+// SHOPPING
+// ═══════════════════════════════════════════════
+function getIS(id){ return shopState[id]||{checked:false,assigned:null,qty:null}; }
+function setIS(id,patch){ shopState[id]=Object.assign({},getIS(id),patch); scheduleSave(); }
+
+function buildCat(catId){
+  const linked=[];
+  days.forEach(day=>day.meals?.forEach(meal=>(meal.ings||[]).filter(i=>i.cat===catId).forEach(i=>{
+    const s=getIS(i.id);
+    linked.push({id:i.id,name:i.name,qty:s.qty!==null?s.qty:i.qty,assigned:s.assigned,checked:s.checked,linked:true,meal:meal.name});
+  })));
+  const manual=(manualItems||[]).filter(i=>i.cat===catId);
+  return [...linked,...manual];
+}
+
+function setFilter(f,btn){
+  shopFilter=f;
+  document.querySelectorAll('.shop-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderShop();
+}
+
+function renderShop(){
+  const open=new Set(); document.querySelectorAll('.shop-sec.open').forEach(s=>open.add(s.dataset.id));
+  const w=document.getElementById('shop-wrap'); w.innerHTML='';
+  let tot=0, chkd=0;
+  CATS.forEach(cat=>{
+    let items=buildCat(cat.id);
+    if(shopFilter!=='all'){
+      items=items.filter(i=>{
+        const a=i.linked?getIS(i.id).assigned:i.assigned;
+        return shopFilter==='unassigned'?!a:a===shopFilter;
+      });
+    }
+    if(!items.length) return;
+    tot+=items.length;
+    const cc=items.filter(i=>i.checked||(i.linked&&getIS(i.id).checked)).length;
+    chkd+=cc;
+    const sec=document.createElement('div');
+    sec.className='shop-sec'+(open.has(cat.id)?' open':'');
+    sec.dataset.id=cat.id;
+    sec.innerHTML=`
+      <div class="shop-hdr" onclick="toggleShop('${cat.id}')">
+        <span class="shop-icon">${cat.icon}</span>
+        <span class="shop-title">${cat.title}</span>
+        <span class="item-ct">${items.length}</span>
+        ${cc>0?`<span class="chk-ct">\u2713 ${cc}</span>`:''}
+        <span class="shop-chev">&#9660;</span>
+      </div>
+      <div class="shop-body">
+        ${items.map(item=>shopItemHtml(cat.id,item)).join('')}
+        <div class="add-item-bar">
+          <input class="add-item-inp" id="aii-${cat.id}" placeholder="Add item…" onkeydown="if(event.key==='Enter')addItem('${cat.id}')">
+          <input class="add-item-qty" id="aiq-${cat.id}" placeholder="Qty">
+          <button class="add-item-btn" onclick="addItem('${cat.id}')">+ Add</button>
+        </div>
+      </div>`;
+    w.appendChild(sec);
+  });
+  const p=document.getElementById('shop-progress');
+  if(p) p.textContent=chkd+' / '+tot+' checked';
+}
+
+function shopItemHtml(catId,item){
+  const st=item.linked?getIS(item.id):{checked:item.checked,assigned:item.assigned,qty:item.qty};
+  const fam=st.assigned;
+  const bl=fam?({A:'Perry',B:'Shavel',C:'Geller'}[fam]+' Family'):'Assign';
+  const bc=fam?fam:'none';
+  const linked=item.linked?`<span class="linked-tag">linked</span>`:'';
+  return `
+    <div class="shop-item${st.checked?' chkd':''}" id="si-${item.id}">
+      <div class="chkbox" onclick="toggleChk('${catId}','${item.id}',${!!item.linked})"></div>
+      <div class="iname" onclick="toggleChk('${catId}','${item.id}',${!!item.linked})">${esc(item.name)}${linked}</div>
+      <span class="iqty" id="qd-${item.id}" onclick="startQtyEdit('${item.id}','${catId}')">${esc(st.qty||item.qty||'')||'<span style="color:var(--light);font-style:italic">qty</span>'}</span>
+      <div class="iactions">
+        <span class="assign-badge ${bc}" data-fam="${fam||''}" onclick="openPicker(event,'${catId}','${item.id}',${!!item.linked})">${bl}</span>
+        ${!item.linked?`<button class="icon-btn del" onclick="rmItem('${catId}','${item.id}')">&#x2715;</button>`:''}
+      </div>
+    </div>`;
+}
+
+function toggleShop(id){ document.querySelector(`.shop-sec[data-id="${id}"]`)?.classList.toggle('open'); }
+
+function toggleChk(catId,itemId,isLinked){
+  if(isLinked){ const s=getIS(itemId); setIS(itemId,{checked:!s.checked}); }
+  else{ const i=(manualItems||[]).find(i=>i.id===itemId); if(i){i.checked=!i.checked; scheduleSave();} }
+  renderShop(); document.querySelector(`.shop-sec[data-id="${catId}"]`)?.classList.add('open');
+}
+
+function startQtyEdit(itemId,catId){
+  const disp=document.getElementById('qd-'+itemId); if(!disp) return;
+  const st=getIS(itemId);
+  const byCat=buildCat(catId);
+  const found=byCat.find?byCat.find(i=>i.id===itemId):null;
+  const cur=st.qty!==null&&st.qty!==undefined?st.qty:(found?found.qty:'');
+  const inp=document.createElement('input');
+  inp.className='iqty-inp'; inp.value=cur||'';
+  inp.onblur=()=>{ setIS(itemId,{qty:inp.value.trim()}); renderShop(); document.querySelector(`.shop-sec[data-id="${catId}"]`)?.classList.add('open'); };
+  inp.onkeydown=(e)=>{ if(e.key==='Enter')inp.blur(); if(e.key==='Escape'){disp.style.display='';inp.remove();} };
+  disp.style.display='none'; disp.parentNode.insertBefore(inp,disp); inp.focus(); inp.select();
+}
+
+function addItem(catId){
+  const n=document.getElementById('aii-'+catId)?.value.trim(); if(!n) return;
+  const q=document.getElementById('aiq-'+catId)?.value.trim()||'';
+  if(!manualItems) manualItems=[];
+  manualItems.push({id:uid(),cat:catId,name:n,qty:q,assigned:null,checked:false});
+  scheduleSave(); renderShop(); document.querySelector(`.shop-sec[data-id="${catId}"]`)?.classList.add('open');
+}
+
+function rmItem(catId,itemId){
+  manualItems=(manualItems||[]).filter(i=>i.id!==itemId);
+  scheduleSave(); renderShop(); document.querySelector(`.shop-sec[data-id="${catId}"]`)?.classList.add('open');
+}
+
+// ═══════════════════════════════════════════════
+// ASSIGN PICKER
+// ═══════════════════════════════════════════════
+let pickerTarget=null;
+function openPicker(e,catId,itemId,isLinked){
+  e.stopPropagation();
+  pickerTarget={catId,itemId,isLinked};
+  const p=document.getElementById('picker'); p.classList.add('on');
+  const H=165,W=175;
+  const top=e.clientY+H+12>window.innerHeight?Math.max(4,e.clientY-H-8):e.clientY+8;
+  p.style.top=top+'px'; p.style.left=Math.min(e.clientX,window.innerWidth-W-8)+'px';
+}
+function doAssign(fam){
+  document.getElementById('picker').classList.remove('on');
+  if(!pickerTarget) return;
+  const {catId,itemId,isLinked}=pickerTarget;
+  if(isLinked){ setIS(itemId,{assigned:fam}); }
+  else{ const i=(manualItems||[]).find(i=>i.id===itemId); if(i){i.assigned=fam; scheduleSave();} }
+  renderShop(); document.querySelector(`.shop-sec[data-id="${catId}"]`)?.classList.add('open');
+  pickerTarget=null;
+}
+document.addEventListener('click',e=>{ const p=document.getElementById('picker'); if(p&&!p.contains(e.target))p.classList.remove('on'); });
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
